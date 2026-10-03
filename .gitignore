@@ -1,0 +1,15 @@
+*.exe
+*.bmp
+*.png
+**/target/
+**/cargo-target/
+**/*.tmp
+**/.croptix-*-backups/
+**/.croptix-rust.lock
+.env
+.env.*
+fonte/*
+!fonte/croptix.ico
+rust/PLAN.md
+EXECUTAVEL.md
+APPLY-PATCH.md

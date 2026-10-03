@@ -1,0 +1,25 @@
+name: Test and build Windows
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch locked dependencies
+        working-directory: rust
+        run: cargo fetch --locked
+      - name: Test and build
+        shell: pwsh
+        run: ./rust/build.ps1 -Publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: croptix-patcher-windows-x64
+          path: CrOptix Patcher.exe
