@@ -72,7 +72,7 @@ test('restaura backup com metadados e hashes no formato Rust',t=>{
   const folder=fixture(t,prefix+main,json);
   const snapshot=path.join(folder,'.croptix-rust-backups','snapshot-123');fs.mkdirSync(snapshot,{recursive:true});
   fs.writeFileSync(path.join(snapshot,'katamari.js'),main);fs.writeFileSync(path.join(snapshot,'manifest.json'),json);
-  fs.writeFileSync(path.join(snapshot,'info.json'),JSON.stringify({folder:'\\\\?\\'+folder,created:'123',before:[hash(main),hash(json)],after:[hash(prefix+main),hash(json)]}));
+  fs.writeFileSync(path.join(snapshot,'info.json'),JSON.stringify({folder:'\\\\?\\'+fs.realpathSync.native(folder),created:'123',before:[hash(main),hash(json)],after:[hash(prefix+main),hash(json)]}));
   assert.equal(run(folder,'--restore'),0);assert.equal(read(folder,'katamari.js'),main);
 });
 test('backup corrompido não altera os arquivos atuais',t=>{
