@@ -1,46 +1,43 @@
 # CrOptix Patcher
 
-Patcher independente para Windows x64, escrito em Rust, para aplicar ajustes ao `katamari.js` da extensão [CrOptix](https://github.com/stratumadev/croptix). Não é um projeto oficial da Crunchyroll ou do CrOptix.
+Patcher independente para Windows x64, escrito em C# (Windows Forms), para aplicar ajustes ao `katamari.js` da extensão [CrOptix](https://github.com/stratumadev/croptix). Não é um projeto oficial da Crunchyroll ou do CrOptix.
 
 ## Download e uso
 
-Baixe `CrOptix Patcher.exe` na seção [Releases](https://github.com/LucasPreto0000/croptix-patcher/releases).
+Baixe `CrOptix Patcher.exe` em [Releases](https://github.com/LucasPreto0000/croptix-patcher/releases/latest).
 
-1. Feche a extensão/página durante a aplicação e abra o patcher.
-2. Selecione a pasta que contém `katamari.js` e `manifest.json` (normalmente `dist`).
-3. Clique em **Aplicar patch** e consulte o console fixo.
-4. Recarregue a extensão no navegador e a página da Crunchyroll.
+1. Abra o aplicativo e selecione a pasta com `katamari.js` e `manifest.json` (geralmente `dist`).
+2. Clique em **Aplicar patch** e consulte o console fixo.
+3. Recarregue a extensão no navegador e a página da Crunchyroll.
 
-O executável não precisa de Node.js ou .NET e não importa nem executa `pip1.js`. A lógica dos fixes está incorporada no próprio aplicativo.
+A versão 1.2.0 torna C# o projeto principal, com console sempre visível, seletor de pasta do Explorer e exe de aproximadamente 91 KB. Usa o .NET Framework 4.x do Windows. O patch é o mesmo da versão Rust 1.1.0, e seus backups continuam compatíveis.
 
-## Ajustes incorporados
+## Correções incluídas
 
-- Picture-in-Picture com vídeo original e camada de legendas, controles nativos, restauração ao fechar e fallback para PiP nativo.
-- Botão de próximo episódio ao lado do volume, com tamanho e alinhamento ajustados.
-- Avanço imediato em cada repetição de ←/→ e J/L, sem pausar ou esperar soltar a tecla.
+- PiP com vídeo original e camada de legendas, controles nativos e restauração ao fechar.
+- Botão de próximo episódio ao lado do volume.
+- Avanço imediato em cada repetição de ←/→ e J/L, sem esperar soltar a tecla.
 - Barra de controles oculta ao avançar, restaurada ao mover o mouse.
-- Correção da bolinha da timeline ao selecionar com o mouse e apertar espaço: preserva o foco visual do mouse, sem remover a indicação de foco para navegação por Tab.
+- Correção do foco da bolinha ao selecionar a timeline com o mouse e apertar espaço, preservando a navegação por Tab.
 
-A versão 1.1.0 incorpora a atualização de `pip1.js` de 03/10/2026. Atualiza patches Rust anteriores reconhecidos sem duplicá-los. Patches editados ou desconhecidos são recusados. O navegador precisa oferecer suporte às APIs de PiP; o fallback nativo pode não incluir as legendas.
+O PiP com legendas exige suporte a Document Picture-in-Picture; o fallback PiP nativo pode não incluir legendas.
 
-## Segurança e backups
+## Arquivos e backups
 
-Valida os arquivos antes de modificar, faz backup em `.croptix-rust-backups`, registra o que mudou e detecta reaplicações. **Restaurar backup** escolhe um snapshot válido correspondente aos arquivos atuais e recusa sobrescrever arquivos atualizados por outro programa.
+Os arquivos JavaScript em `assets/` são as correções que o patcher insere na extensão, não outro aplicativo. O runtime anterior permite reconhecer patches antigos com segurança. Não são necessários Node.js ou Rust para usar o exe.
 
-Não há atualização automática pela internet: para novos ajustes, baixe uma versão nova e aplique novamente. Mudanças internas futuras do player podem exigir adaptação.
+Valida os arquivos antes de modificar, salva cópias em `.croptix-rust-backups` (nome mantido por compatibilidade), não duplica patches reconhecidos e recusa patches adulterados. **Restaurar backup** só restaura um snapshot válido correspondente aos arquivos atuais, sem sobrescrever atualizações externas.
+
+Não importa nem executa o arquivo original `pip1.js`. Não há atualização automática pela internet.
 
 ## Compilação e testes
 
-Requer Windows x64, Rust MSVC, ferramentas C++/Windows SDK e Node.js apenas para os testes JavaScript. Node.js não é incorporado ao `.exe`.
+Para compilar e testar no Windows com o compilador do .NET Framework e Node.js disponível apenas para testes:
 
 ```powershell
-cd rust
-cargo fetch --locked  # primeira vez, baixa as dependências
 ./build.ps1 -Publish
 ```
 
-O script executa os testes Rust e JavaScript e gera o exe na raiz. Sem `-Publish`, apenas verifica/compila. Se o aplicativo estiver aberto, feche-o e repita a publicação.
+O build fica em `%LOCALAPPDATA%/CrOptixPatcher/csharp-standalone`. Com `-Publish`, o exe desta pasta é atualizado. A compilação não usa arquivos de outro projeto nem baixa dependências. Se o exe estiver aberto, feche-o antes de publicar o build.
 
-O cache é reutilizado em `%LOCALAPPDATA%/CrOptixPatcher/cargo-target`, ou no caminho definido por `CARGO_TARGET_DIR`. A pasta de cache, executáveis, fotos e fontes históricos C# não fazem parte do repositório. Não são geradas capturas da interface.
-
-`rust/runtime.js` é o runtime atual. `rust/runtime-v1.js` é mantido somente para reconhecer com segurança o patch anterior durante a migração. `apply-patch.js` é uma alternativa Node independente para aplicação em uma instalação sem patch Rust; o executável Rust é a opção principal.
+Os testes verificam aplicação, reaplicação, restauração exata, migração, arquivos inválidos, backups corrompidos, rollback e foco da timeline. O teste opcional de comparação com um exe Rust real só roda quando `CROPTIX_RUST_EXE` é informado; o projeto não depende dele. Não são geradas capturas da interface.

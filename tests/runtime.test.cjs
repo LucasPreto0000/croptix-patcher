@@ -22,7 +22,7 @@ function fixture() {
         createElement() { return new Element(); }, createElementNS() { return new Element(); },
         addEventListener(name, callback) { if (!handlers.has(name)) handlers.set(name, []); handlers.get(name).push(callback); }
     };
-    vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../rust/runtime.js'), 'utf8'), {
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../assets/runtime.js'), 'utf8'), {
         window: {}, document, Element, console, setTimeout, clearTimeout, Symbol
     });
     return { Element, styles, emit(name, event) { for (const handler of handlers.get(name) || []) handler(event); } };
