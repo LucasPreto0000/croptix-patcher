@@ -1,4 +1,5 @@
 *.exe
+/target/
 *.tmp
 **/.croptix-*-backups/
 **/.croptix-rust.lock

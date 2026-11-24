@@ -1,4 +1,4 @@
-name: Test and build Windows CSharp
+name: Test and build Windows Rust
 on:
   push:
     branches: [main]
@@ -10,13 +10,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Test and build CSharp
-        shell: pwsh
-        run: ./build.ps1 -Publish
+      - name: Test and build
+        run: |
+          cargo fmt --check
+          cargo test --locked
+          cargo build --release --locked
       - uses: actions/upload-artifact@v4
         with:
           name: croptix-patcher-windows-x64
-          path: CrOptix Patcher.exe
+          path: target/release/croptix-patcher.exe

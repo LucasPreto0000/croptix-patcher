@@ -1,0 +1,17 @@
+[package]
+name = "croptix-patcher"
+version = "2.0.0"
+edition = "2024"
+
+[dependencies]
+gpui = { version = "=0.2.2", default-features = false }
+serde_json = "1"
+sha2 = "0.10"
+tempfile = "3"
+
+[profile.dev]
+debug = 0
+
+[profile.release]
+lto = "thin"
+strip = true

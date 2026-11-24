@@ -122,6 +122,85 @@
         }
         return null
     }
+    const installDubCaptionPolicy = (model) => {
+        const player = model?._player
+        if (typeof player?.setTextTrack !== 'function') return null
+        const subscriptions = []
+        let audio, text, audioTracks = [], textTracks = [], manual = false, disposed = false, changing = false
+        const language = (track) => String(track?.language || '').toLowerCase().replace(/_/g, '-').split('-')[0]
+        const isDub = () => {
+            if (!audio || !language(audio)) return false
+            if (/^dub$/i.test(String(audio.role || '')) || audio.original === false) return true
+            if (audio.original === true) return false
+            const originals = new Set(audioTracks.filter((track) => track.original === true).map(language).filter(Boolean))
+            return originals.size === 1 && !originals.has(language(audio))
+        }
+        const isCaption = (track) => {
+            if (!track || String(track.language).toLowerCase() === 'none') return false
+            if (typeof model._isClosedCaptionTrack === 'function') return model._isClosedCaptionTrack(track)
+            return [track.role, track.kind, ...(Array.isArray(track.roles) ? track.roles : [])]
+                .some((role) => /^(cc|captions?|closed[_ -]?captions?)$/i.test(String(role || '')))
+        }
+        const apply = () => {
+            if (disposed || changing || manual || !isDub() || !isCaption(text)) return
+            const off = textTracks.find((track) => String(track.language).toLowerCase() === 'none')
+            if (!off) return
+            changing = true
+            try {
+                const result = player.setTextTrack(off)
+                if (result && typeof result.then === 'function') {
+                    result.catch((error) => console.warn('[CrOptix][CC] Could not disable automatic captions.', error))
+                        .finally(() => { changing = false })
+                } else changing = false
+            } catch (error) {
+                changing = false
+                console.warn('[CrOptix][CC] Could not disable automatic captions.', error)
+            }
+        }
+        const originalSelect = model.setTextTrack
+        const selectManually = function (...args) {
+            manual = true
+            return originalSelect.apply(this, args)
+        }
+        if (typeof originalSelect === 'function') model.setTextTrack = selectManually
+        const cleanup = () => {
+            disposed = true
+            subscriptions.forEach((subscription) => subscription?.unsubscribe?.())
+            if (model.setTextTrack === selectManually) model.setTextTrack = originalSelect
+        }
+        const listen = (stream, callback) => {
+            if (typeof stream?.subscribe === 'function') subscriptions.push(stream.subscribe(callback))
+        }
+        try {
+            const events = player.eventSubscriptions?.()
+            listen(events?.mediaResolving$, () => { manual = false; audio = text = undefined; textTracks = []; audioTracks = [] })
+            listen(model.availableAudioTracks$, (tracks) => { audioTracks = tracks || []; apply() })
+            listen(model.activeAudioTrack$, (track) => {
+                if (language(track) !== language(audio) || track?.role !== audio?.role || track?.guid !== audio?.guid) manual = false
+                audio = track
+                apply()
+            })
+            listen(model.availableTextTracks$, (tracks) => { textTracks = tracks || []; apply() })
+            listen(model.activeTextTrack$, (track) => { text = track; apply() })
+        } catch (error) {
+            cleanup()
+            console.warn('[CrOptix][CC] Could not bind caption selection.', error)
+            return null
+        }
+        return cleanup
+    }
+    let captionBinding = null
+    const syncDubCaptions = () => {
+        const root = document.querySelector('[data-testid="player-controls-root"]')
+        const model = root ? getViewModels()?.trackSelectionVM : null
+        if (captionBinding?.model === model && captionBinding?.root === root) return
+        captionBinding?.cleanup()
+        captionBinding = null
+        if (model) {
+            const cleanup = installDubCaptionPolicy(model)
+            if (cleanup) captionBinding = { root, model, cleanup }
+        }
+    }
     const nextButton = document.createElement('button')
     nextButton.id = 'croptix-pip1-next'
     nextButton.type = 'button'
@@ -159,12 +238,16 @@
     }
     const watchPlayerControls = () => {
         placeNextButton()
+        syncDubCaptions()
         const stackSelector = '[data-testid="bottom-left-controls-stack"]'
         const observer = new MutationObserver((records) => {
-            if (records.some((record) => {
+            if (captionBinding && !captionBinding.root.isConnected || records.some((record) => {
                 if (record.target instanceof Element && record.target.closest(stackSelector)) return true
                 return [...record.addedNodes].some((node) => node instanceof Element && (node.matches(stackSelector) || node.querySelector(stackSelector)))
-            })) placeNextButton()
+            })) {
+                placeNextButton()
+                syncDubCaptions()
+            }
         })
         observer.observe(document.body, { childList: true, subtree: true })
     }
